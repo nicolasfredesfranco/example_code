@@ -1,0 +1,28 @@
+# Ignore WANDS folder
+WANDS/
+
+# Python common ignores
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
