@@ -61,6 +61,57 @@ The assignment provided a baseline Python notebook implementing a simple e-comme
 
 ---
 
+## Critical Fixes Implemented
+
+This solution implements comprehensive corrections to address systematic issues in the original implementation:
+
+### Product Representation Fixes
+
+**FIX 1.1-1.2: Separate Normalization**
+- Problem: MCA components (range -22 to +23) dominated TF-IDF components due to scale mismatch
+- Solution: Apply StandardScaler to MCA and TF-IDF separately before concatenation
+- Impact: Both component types now contribute equally to final representation
+
+**FIX 1.3: Increased SVD Components**
+- Problem: 512 components retained only ~40% variance, discarding 60% of semantic information
+- Solution: Increased to 1024 components, retaining ~60% variance
+- Impact: Captures critical semantic patterns previously lost
+
+**FIX 1.4: Include product_features**
+- Problem: Discarded valuable structured attributes (e.g., "material: wood") due to high uniqueness
+- Solution: Include product_features in TF-IDF vectorization
+- Impact: Captures attribute-level information that users actively search for
+
+### Model Training Fixes
+
+**FIX 4.1: Removed Broken Triplet Loss**
+- Problem: Triplet loss implementation averaged similarities instead of using true anchor-positive-negative triplets
+- Solution: Removed incorrect implementation
+
+**FIX 4.2 & 4.4: Simple MSE Loss**
+- Problem: Combined triplet + 0.3*MSE with arbitrary weight, not optimized
+- Solution: Use clean MSE loss with relevance levels (Exact: 1.0, Partial: 0.6, Irrelevant: 0.0)
+- Impact: Mathematically clean, no arbitrary hyperparameters
+
+**FIX 5.1: Removed Balanced Sampling**
+- Problem: Balanced to 25,614 samples/label, wasting 121,019 Partial examples (17.5% data utilization)
+- Solution: Use ALL 233,448 training examples
+- Impact: Model learns from complete dataset, especially critical Partial matches (62.81% of data)
+
+**FIX 5.5: Increased Batch Size**
+- Problem: batch_size=64 too small for GPU, causes noisy gradients
+- Solution: Increased to 256
+- Impact: Better GPU utilization, more stable training
+
+### Evaluation Fixes
+
+**FIX 6.2: Corrected Weighted MAP Normalization**
+- Problem: Normalized by sum of all relevant item weights instead of ideal AP score
+- Solution: Calculate ideal score by simulating optimal ranking (Exact first, then Partial) in top-K positions
+- Impact: Scores now properly normalized and comparable across queries
+
+---
+
 ## My Solution: Key Improvements
 
 ### 1. Information-Theoretic Foundation
@@ -71,15 +122,22 @@ Developed a comprehensive theoretical framework for understanding TF-IDF from an
 - Vector space as information-weighted representation
 - Provides mathematical foundation for subsequent improvements
 
-### 2. Advanced Product Representation (528 dimensions)
+### 2. Advanced Product Representation (1040 dimensions - UPDATED)
 
 **Feature Engineering:**
-- Multiple Correspondence Analysis (MCA) for categorical features
-- TF-IDF text embeddings combined with categorical encodings
-- Normalized vector representations for cosine similarity
+- Multiple Correspondence Analysis (MCA) for categorical features (16 dimensions)
+- TF-IDF text embeddings with **1024 dimensions** (FIX 1.3: increased from 512)
+- **product_features included** in TF-IDF (FIX 1.4: captures attribute-level information)
+- **Separate normalization** of MCA and TF-IDF before concatenation (FIX 1.1-1.2)
+- Final L2 normalization for cosine similarity
 - Removed non-semantic features (ratings, review counts) to focus on content
 
 **Rationale:** Combining categorical structure with semantic text creates richer product representations that capture both taxonomy and content.
+
+**Key Improvements:**
+- **FIX 1.1-1.2**: StandardScaler normalization applied separately to MCA and TF-IDF components before concatenation, preventing MCA (range -22 to +23) from dominating TF-IDF
+- **FIX 1.3**: SVD components increased from 512 to 1024, retaining ~60% variance instead of ~40%
+- **FIX 1.4**: product_features (e.g., "material: wood", "color: brown") included in TF-IDF to capture structured attributes that users search for
 
 ### 3. Query Processing Pipeline
 
@@ -91,49 +149,65 @@ Developed a comprehensive theoretical framework for understanding TF-IDF from an
 
 **Impact:** Cleaner queries lead to more accurate retrieval, especially for real-world queries with spelling errors.
 
-### 4. Dimensionality Reduction via SVD
+### 4. Dimensionality Reduction via SVD (IMPROVED)
 
-- Compressed TF-IDF vectors from 44,307 to 512 dimensions
-- Retains 95%+ of semantic information
-- Reduces computational complexity
+- **FIX 1.3**: Compressed TF-IDF vectors from ~50,000+ to **1024 dimensions** (increased from 512)
+- Retains ~60% of variance (improved from ~40%)
+- Reduces computational complexity while retaining more semantic information
 - Removes noise and focuses on latent semantic patterns
 
 **Analysis:** Includes visualization of explained variance and information retention to justify the chosen dimensionality.
 
-### 5. Deep Learning Neural Network
+**Improvement:** The increase from 512 to 1024 components captures critical semantic patterns that were previously lost in the 60% of discarded variance.
 
-**Architecture:**
-- Input: 512-dimensional query embeddings (from SVD)
+### 5. Deep Learning Neural Network (CORRECTED)
+
+**Architecture (UPDATED):**
+- Input: **1024-dimensional** query embeddings from SVD (FIX: increased from 512)
 - Hidden layer: 4,096 neurons with LeakyReLU activation
-- Output: 528-dimensional product space with unit normalization
-- Loss function: Triplet loss + MSE for multi-level relevance
+- Output: **1040-dimensional** product space with unit normalization (FIX: increased from 528)
+- **Loss function: Simple MSE** (FIX 4.2: mathematically clean, no arbitrary weights)
 - Optimizer: Adam with learning rate 0.001 and weight decay
 
-**Training Strategy:**
-- Phase 1: Cross-validation to determine optimal epochs (prevents overfitting)
-- Phase 2: Full dataset training with optimal hyperparameters
+**Training Strategy (IMPROVED):**
+- **FIX 5.1**: NO balanced sampling - uses ALL 233,448 training examples (especially 146,633 Partial matches)
+- **FIX 5.5**: Batch size increased to 256 (improved from 64) for better GPU utilization
+- Early stopping with patience=20 to prevent overfitting
 - GPU acceleration for efficient training
 - Xavier initialization for better convergence
 
-**Result:** Learned non-linear mapping between query and product spaces that captures semantic relationships.
+**Key Fixes:**
+- **FIX 4.1**: Removed incorrect triplet loss implementation (was averaging instead of true triplets)
+- **FIX 4.2 & 4.4**: Replaced with simple MSE loss using relevance levels (Exact: 1.0, Partial: 0.6, Irrelevant: 0.0)
+- **FIX 5.1**: Eliminated balanced sampling that wasted 121,019 Partial examples
+- **FIX 5.5**: Batch size 256 for better GPU utilization and more stable gradients
 
-### 6. Weighted MAP@10 Evaluation
+**Result:** Learned non-linear mapping between query and product spaces using a mathematically clean approach.
+
+### 6. Weighted MAP@10 Evaluation (CORRECTED)
 
 **Modified Metric:**
 - Exact matches: Score = 1.0
-- Partial matches: Score = 0.5
+- Partial matches: Score = 0.5 (configurable)
 - Irrelevant: Score = 0.0
+
+**FIX 6.2: Corrected Normalization**
+- Previous bug: Normalized by sum of all relevant item weights
+- Correct implementation: Normalizes by ideal AP score with optimal ranking
+- Ideal score calculated by placing all relevant items in top-K positions in optimal order (Exact first, then Partial)
 
 **Justification:**
 - Provides more nuanced evaluation
 - Recognizes value in partial matches
 - Better reflects real-world relevance gradients
 - Gives clearer signal for model improvements
+- **Properly normalized** to ensure scores are comparable across queries
 
 **Tradeoffs:**
 - Pro: Less strict penalization, more realistic
 - Pro: Encourages models to get close even if not perfect
-- Con: May inflate perceived performance
+- Pro: Mathematically correct normalization ensures fair comparison
+- Con: May inflate perceived performance (mitigated by correct normalization)
 - Con: Less interpretable than binary evaluation
 
 ### 7. Comprehensive System Demonstration
