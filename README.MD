@@ -187,8 +187,8 @@ The neural network training automatically detects and uses GPU if available:
 - MAP@10: 0.29
 
 **Neural Network Model:**
-- MAP@10: 0.057 (strict evaluation with exact matches only)
-- Weighted MAP@10: 0.007 (with partial matches weighted at 0.5)
+- MAP@10: 0.0435 (strict evaluation with exact matches only)
+- Weighted MAP@10: 0.0059 (with partial matches weighted at 0.5)
 
 **Note:** The neural network model showed lower MAP@10 than the baseline on this specific evaluation. This is discussed in detail in the notebook with analysis of:
 - Why the score decreased despite theoretical improvements
@@ -198,7 +198,7 @@ The neural network training automatically detects and uses GPU if available:
 
 ### Key Insights
 
-1. **Vocabulary Mismatch**: User queries often contain out-of-vocabulary terms that the product catalog doesn't include
+1. **Vocabulary Mismatch**: User queries often contain out-of-vocabulary terms that the product catalog does not include
 
 2. **Training Data Quality**: The model is only as good as the labeled training data; more diverse training examples could improve performance
 
