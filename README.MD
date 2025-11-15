@@ -71,13 +71,12 @@ Developed a comprehensive theoretical framework for understanding TF-IDF from an
 - Vector space as information-weighted representation
 - Provides mathematical foundation for subsequent improvements
 
-### 2. Advanced Product Representation (216 dimensions)
+### 2. Advanced Product Representation (528 dimensions)
 
 **Feature Engineering:**
-- Multiple Correspondence Analysis (MCA) for categorical features:
-  - Product class encoding (8 dimensions)
-  - Category hierarchy encoding (8 dimensions)
-- TF-IDF text embeddings with SVD reduction (200 dimensions)
+- Multiple Correspondence Analysis (MCA) for categorical features
+- TF-IDF text embeddings combined with categorical encodings
+- Normalized vector representations for cosine similarity
 - Removed non-semantic features (ratings, review counts) to focus on content
 
 **Rationale:** Combining categorical structure with semantic text creates richer product representations that capture both taxonomy and content.
@@ -94,7 +93,7 @@ Developed a comprehensive theoretical framework for understanding TF-IDF from an
 
 ### 4. Dimensionality Reduction via SVD
 
-- Compressed TF-IDF vectors from 44,307 to 200 dimensions
+- Compressed TF-IDF vectors from 44,307 to 512 dimensions
 - Retains 95%+ of semantic information
 - Reduces computational complexity
 - Removes noise and focuses on latent semantic patterns
@@ -104,11 +103,11 @@ Developed a comprehensive theoretical framework for understanding TF-IDF from an
 ### 5. Deep Learning Neural Network
 
 **Architecture:**
-- Input: 200-dimensional query embeddings
-- Hidden layer: 4,096 neurons with Tanh activation
-- Output: 216-dimensional product space with unit normalization
-- Loss function: 1 - cosine similarity
-- Optimizer: Adam with learning rate 0.001
+- Input: 512-dimensional query embeddings (from SVD)
+- Hidden layer: 4,096 neurons with LeakyReLU activation
+- Output: 528-dimensional product space with unit normalization
+- Loss function: Triplet loss + MSE for multi-level relevance
+- Optimizer: Adam with learning rate 0.001 and weight decay
 
 **Training Strategy:**
 - Phase 1: Cross-validation to determine optimal epochs (prevents overfitting)
@@ -188,8 +187,8 @@ The neural network training automatically detects and uses GPU if available:
 - MAP@10: 0.29
 
 **Neural Network Model:**
-- MAP@10: 0.21 (strict evaluation with exact matches only)
-- Weighted MAP@10: Higher when partial matches are considered
+- MAP@10: 0.057 (strict evaluation with exact matches only)
+- Weighted MAP@10: 0.007 (with partial matches weighted at 0.5)
 
 **Note:** The neural network model showed lower MAP@10 than the baseline on this specific evaluation. This is discussed in detail in the notebook with analysis of:
 - Why the score decreased despite theoretical improvements
@@ -329,9 +328,15 @@ The solution includes:
 
 ---
 
+## Author
+
+**Nicolas Fredes Franco**
+
+This solution was developed as part of the Harvard Business School retrieval assignment.
+
 ## Contact and Attribution
 
-This solution was developed as part of the Harvard Business School retrieval assignment. The WANDS dataset is provided by Wayfair and is used under their license terms.
+The WANDS dataset is provided by Wayfair and is used under their license terms.
 
 For questions or discussions about this implementation, please refer to the detailed documentation within the notebook itself.
 
